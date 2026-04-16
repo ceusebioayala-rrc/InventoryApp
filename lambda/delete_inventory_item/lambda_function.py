@@ -2,34 +2,57 @@ import boto3
 import json
 
 def lambda_handler(event, context):
-    # Initialize DynamoDB client
     dynamo_client = boto3.client('dynamodb')
     table_name = 'Inventory'
 
-    # Extract the '_id' from the path parameters
+    # Validate input
     if 'pathParameters' not in event or 'id' not in event['pathParameters']:
         return {
             'statusCode': 400,
             'body': json.dumps("Missing 'id' path parameter")
         }
 
-    key_value = event['pathParameters']['id']
+    id_value = event['pathParameters']['id']
 
-    # Prepare the key for DynamoDB
-    key = {
-        'id': {'S': key_value}
-    }
-
-    # Attempt to delete the item from the table
     try:
-        dynamo_client.delete_item(TableName=table_name, Key=key)
+        # 1. Query all items with the given id
+        response = dynamo_client.query(
+            TableName=table_name,
+            KeyConditionExpression='id = :id',
+            ExpressionAttributeValues={
+                ':id': {'S': id_value}
+            }
+        )
+
+        items = response.get('Items', [])
+
+        if not items:
+            return {
+                'statusCode': 404,
+                'body': json.dumps("No items found for this id")
+            }
+
+        # 2. Delete each item using FULL primary key
+        deleted_count = 0
+
+        for item in items:
+            dynamo_client.delete_item(
+                TableName=table_name,
+                Key={
+                    'id': item['id'],
+                    'location_id': item['location_id']
+                }
+            )
+            deleted_count += 1
+
         return {
             'statusCode': 200,
-            'body': json.dumps(f"Item with ID {key_value} deleted successfully.")
+            'body': json.dumps(f"Deleted {deleted_count} item(s) for id {id_value}")
         }
+
     except Exception as e:
-        print(e)
+        print("Error:", str(e))
         return {
             'statusCode': 500,
-            'body': json.dumps(f"Error deleting item: {str(e)}")
+            'body': json.dumps(str(e))
         }
