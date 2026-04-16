@@ -1,0 +1,73 @@
+name: Deploy Python functions to AWS Lambda
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'lambda/**/lambda_function.py'
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      functions: ${{ steps.set-matrix.outputs.functions }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get changed files
+        id: changed-files
+        run: |
+          git fetch origin main
+          CHANGED=$(git diff --name-only origin/main HEAD | grep 'lambda/.*/lambda_function.py' || true)
+          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+
+      - name: Build matrix
+        id: set-matrix
+        run: |
+          FUNCTIONS=()
+
+          for file in ${{ steps.changed-files.outputs.changed }}; do
+            FUNC=$(echo $file | cut -d'/' -f2)
+            FUNCTIONS+=("\"$FUNC\"")
+          done
+
+          # Remove duplicates
+          UNIQUE_FUNCTIONS=$(printf "%s\n" "${FUNCTIONS[@]}" | sort -u | tr '\n' ',' | sed 's/,$//')
+
+          echo "functions=[$UNIQUE_FUNCTIONS]" >> $GITHUB_OUTPUT
+
+  deploy:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.functions != '[]' }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        function: ${{ fromJson(needs.detect-changes.outputs.functions) }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Zip Lambda
+        run: zip function.zip lambda_function.py
+        working-directory: ./lambda/${{ matrix.function }}
+
+      - name: Deploy Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name ${{ matrix.function }} \
+            --zip-file fileb://function.zip \
+            --publish
+        working-directory: ./lambda/${{ matrix.function }}
+
+      - name: Cleanup
+        run: rm function.zip
+        working-directory: ./lambda/${{ matrix.function }}
