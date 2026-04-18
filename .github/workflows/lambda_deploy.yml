@@ -12,30 +12,44 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       functions: ${{ steps.set-matrix.outputs.functions }}
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Get changed files
         id: changed-files
         run: |
           git fetch origin main
+
           CHANGED=$(git diff --name-only origin/main HEAD | grep 'lambda/.*/lambda_function.py' || true)
-          echo "changed=$CHANGED" >> $GITHUB_OUTPUT
+
+          echo "changed<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Build matrix
         id: set-matrix
         run: |
+          set -e
+
           FUNCTIONS=()
 
-          for file in ${{ steps.changed-files.outputs.changed }}; do
-            FUNC=$(echo $file | cut -d'/' -f2)
-            FUNCTIONS+=("\"$FUNC\"")
-          done
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            FUNC=$(echo "$file" | cut -d'/' -f2)
+            FUNCTIONS+=("$FUNC")
+          done <<< "${{ steps.changed-files.outputs.changed }}"
 
-          # Remove duplicates
-          UNIQUE_FUNCTIONS=$(printf "%s\n" "${FUNCTIONS[@]}" | sort -u | tr '\n' ',' | sed 's/,$//')
+          if [ ${#FUNCTIONS[@]} -eq 0 ]; then
+            echo "functions=[]" >> $GITHUB_OUTPUT
+            exit 0
+          fi
 
-          echo "functions=[$UNIQUE_FUNCTIONS]" >> $GITHUB_OUTPUT
+          UNIQUE_FUNCTIONS=$(printf "%s\n" "${FUNCTIONS[@]}" | sort -u | jq -R . | jq -s .)
+
+          echo "functions=$UNIQUE_FUNCTIONS" >> $GITHUB_OUTPUT
 
   deploy:
     needs: detect-changes
@@ -57,17 +71,18 @@ jobs:
           aws-region: us-east-1
 
       - name: Zip Lambda
-        run: zip function.zip lambda_function.py
         working-directory: ./lambda/${{ matrix.function }}
+        run: |
+          zip function.zip lambda_function.py
 
       - name: Deploy Lambda
+        working-directory: ./lambda/${{ matrix.function }}
         run: |
           aws lambda update-function-code \
-            --function-name ${{ matrix.function }} \
+            --function-name "${{ matrix.function }}" \
             --zip-file fileb://function.zip \
             --publish
-        working-directory: ./lambda/${{ matrix.function }}
 
       - name: Cleanup
-        run: rm function.zip
         working-directory: ./lambda/${{ matrix.function }}
+        run: rm -f function.zip
