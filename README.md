@@ -1,3 +1,3 @@
 # Inventory App
 
-Author: Carlos Eusebio
+Author: Carlos Eusebio Ayala
