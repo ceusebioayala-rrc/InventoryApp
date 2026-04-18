@@ -23,11 +23,13 @@ jobs:
         run: |
           git fetch origin main
 
-          CHANGED=$(git diff --name-only origin/main HEAD | grep 'lambda/.*/lambda_function.py' || true)
+          CHANGED="$(git diff --name-only origin/main HEAD | grep 'lambda/.*/lambda_function.py' || true)"
 
-          echo "changed<<EOF" >> $GITHUB_OUTPUT
-          echo "$CHANGED" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          {
+            echo "changed<<EOF"
+            echo "$CHANGED"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Build matrix
         id: set-matrix
@@ -38,18 +40,18 @@ jobs:
 
           while IFS= read -r file; do
             [ -z "$file" ] && continue
-            FUNC=$(echo "$file" | cut -d'/' -f2)
+            FUNC="$(echo "$file" | cut -d'/' -f2)"
             FUNCTIONS+=("$FUNC")
           done <<< "${{ steps.changed-files.outputs.changed }}"
 
           if [ ${#FUNCTIONS[@]} -eq 0 ]; then
-            echo "functions=[]" >> $GITHUB_OUTPUT
+            echo "functions=[]" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
-          UNIQUE_FUNCTIONS=$(printf "%s\n" "${FUNCTIONS[@]}" | sort -u | jq -R . | jq -s .)
+          UNIQUE_FUNCTIONS="$(printf "%s\n" "${FUNCTIONS[@]}" | sort -u | jq -R . | jq -s .)"
 
-          echo "functions=$UNIQUE_FUNCTIONS" >> $GITHUB_OUTPUT
+          echo "functions=$UNIQUE_FUNCTIONS" >> "$GITHUB_OUTPUT"
 
   deploy:
     needs: detect-changes
