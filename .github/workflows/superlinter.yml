@@ -1,11 +1,11 @@
----
 name: Super-Linter
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -28,13 +28,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+          # Disable optional linters you don't need
           VALIDATE_CHECKOV: false
 
+          # Auto-fix tools
           FIX_HTML_PRETTIER: true
           FIX_PYTHON_BLACK: true
           FIX_YAML_PRETTIER: true
 
+          # JSCPD duplicate detection threshold
           JSCPD_THRESHOLD: 5
 
-          PYTHON_PYLINT_ARGS: >
-            --disable=broad-exception-caught,no-else-return,duplicate-code
+          PYTHON_PYLINT_CONFIG_FILE: .pylintrc
+
+          # Ensure rules are loaded from repo root
+          LINTER_RULES_PATH: .

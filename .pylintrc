@@ -1,0 +1,14 @@
+[MASTER]
+ignore-patterns=__init__.py
+
+[MESSAGES CONTROL]
+disable=
+    broad-exception-caught,
+    no-else-return,
+    duplicate-code,
+    missing-module-docstring,
+    missing-function-docstring,
+    unused-argument
+
+[FORMAT]
+max-line-length=100
