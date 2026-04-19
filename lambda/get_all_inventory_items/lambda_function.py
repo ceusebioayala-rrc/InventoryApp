@@ -1,9 +1,12 @@
+"""Lambda function for getting all inventory items from DynamoDB."""
+
 import json
 
 import boto3
 
 
 def lambda_handler(event, context):
+    """Handles request to get all inventory items."""
     # Initialize a DynamoDB client
     dynamo_client = boto3.client('dynamodb')
 

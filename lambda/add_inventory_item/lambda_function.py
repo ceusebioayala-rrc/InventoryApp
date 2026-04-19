@@ -1,3 +1,5 @@
+"""Lambda function for adding inventory items to DynamoDB."""
+
 import json
 import uuid
 
@@ -5,6 +7,8 @@ import boto3
 
 
 def lambda_handler(event, context):
+    """Handles request to add inventory items."""
+    
     # Parse incoming JSON data
     try:
         data = json.loads(event['body'])

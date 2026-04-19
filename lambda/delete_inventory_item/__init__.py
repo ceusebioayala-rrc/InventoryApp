@@ -1,2 +1,2 @@
-"""Lambda package for lambda functions.
+"""Lambda package for the delete inventory lambda function.
 """
