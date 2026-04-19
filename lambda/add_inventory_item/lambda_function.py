@@ -6,7 +6,7 @@ import uuid
 import boto3
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, _context):
     """Handles request to add inventory items."""
     
     # Parse incoming JSON data
