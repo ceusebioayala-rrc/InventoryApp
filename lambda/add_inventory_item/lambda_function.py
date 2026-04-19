@@ -1,4 +1,7 @@
-"""This is a lambda function for adding inventory items to DynamoDB."""
+"""This is a lambda function for adding inventory items to DynamoDB.
+
+Testing
+"""
 
 import json
 import uuid
