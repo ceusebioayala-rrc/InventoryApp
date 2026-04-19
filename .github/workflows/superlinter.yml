@@ -35,3 +35,5 @@ jobs:
           FIX_HTML_PRETTIER: true
           FIX_PYTHON_BLACK: true
           FIX_YAML_PRETTIER: true
+          VALIDATE_JSCPD: true
+          JSCPD_THRESHOLD: 5
