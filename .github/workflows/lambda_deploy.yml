@@ -1,4 +1,4 @@
-name: Deploy Python functions to AWS Lambda
+name: Deploy All Python Lambdas to AWS
 
 on:
   push:
@@ -7,84 +7,44 @@ on:
     paths:
       - 'lambda/**/lambda_function.py'
 
+permissions:
+  contents: read
+
 jobs:
-  detect-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      functions: ${{ steps.set-matrix.outputs.functions }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Get changed files
-        id: changed-files
-        run: |
-          git fetch origin main
-
-          CHANGED="$(git diff --name-only origin/main HEAD | grep 'lambda/.*/lambda_function.py' || true)"
-
-          {
-            echo "changed<<EOF"
-            echo "$CHANGED"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Build matrix
-        id: set-matrix
-        run: |
-          set -e
-
-          FUNCTIONS=()
-
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            FUNC="$(echo "$file" | cut -d'/' -f2)"
-            FUNCTIONS+=("$FUNC")
-          done <<< "${{ steps.changed-files.outputs.changed }}"
-
-          if [ ${#FUNCTIONS[@]} -eq 0 ]; then
-            echo "functions=[]" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-
-          UNIQUE_FUNCTIONS="$(printf "%s\n" "${FUNCTIONS[@]}" | sort -u | jq -R . | jq -s .)"
-
-          echo "functions=$UNIQUE_FUNCTIONS" >> "$GITHUB_OUTPUT"
-
   deploy:
-    needs: detect-changes
-    if: ${{ needs.detect-changes.outputs.functions != '[]' }}
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        function: ${{ fromJson(needs.detect-changes.outputs.functions) }}
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4.0.2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
 
-      - name: Zip Lambda
-        working-directory: ./lambda/${{ matrix.function }}
+      - name: Deploy all Lambda functions
         run: |
-          zip function.zip lambda_function.py
+          set -e
 
-      - name: Deploy Lambda
-        working-directory: ./lambda/${{ matrix.function }}
-        run: |
-          aws lambda update-function-code \
-            --function-name "${{ matrix.function }}" \
-            --zip-file fileb://function.zip \
-            --publish
+          for dir in lambda/*/; do
+            FUNCTION_NAME=$(basename "$dir")
 
-      - name: Cleanup
-        working-directory: ./lambda/${{ matrix.function }}
-        run: rm -f function.zip
+            echo "Deploying Lambda: $FUNCTION_NAME"
+
+            cd "$dir"
+
+            # Package ONLY the lambda_function.py
+            zip function.zip lambda_function.py
+
+            aws lambda update-function-code \
+              --function-name "$FUNCTION_NAME" \
+              --zip-file fileb://function.zip \
+              --publish
+
+            rm -f function.zip
+            cd - > /dev/null
+          done
