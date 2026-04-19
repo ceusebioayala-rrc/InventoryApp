@@ -36,6 +36,8 @@ jobs:
           FIX_PYTHON_BLACK: true
           FIX_YAML_PRETTIER: true
 
+          VALIDATE_JSCPD: true
+
           # JSCPD duplicate detection threshold
           JSCPD_THRESHOLD: 15
 
