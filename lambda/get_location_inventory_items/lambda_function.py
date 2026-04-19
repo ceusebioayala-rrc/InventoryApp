@@ -1,3 +1,5 @@
+"""Lambda function for getting inventory items by location_id from DynamoDB."""
+
 import json
 from decimal import Decimal
 
@@ -13,6 +15,8 @@ GSI_NAME = 'GSI_LOCATIONID_ID'
 
 # Convert Decimal to int/float for JSON serialization
 def convert_decimals(obj):
+    """Convert Decimal to int/float for JSON serialization."""
+
     if isinstance(obj, list):
         return [convert_decimals(i) for i in obj]
     elif isinstance(obj, dict):
@@ -22,6 +26,8 @@ def convert_decimals(obj):
     return obj
 
 def lambda_handler(event, context):
+    """Handles request to get inventory items by location_id."""
+
     table = dynamodb.Table(TABLE_NAME)
 
     # Validate path parameter

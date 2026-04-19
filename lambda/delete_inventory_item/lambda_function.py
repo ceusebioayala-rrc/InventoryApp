@@ -1,9 +1,13 @@
+"""Lambda function for deleting inventory items from DynamoDB."""
+
 import json
 
 import boto3
 
 
 def lambda_handler(event, context):
+    """Handles request to delete inventory items."""
+
     dynamo_client = boto3.client('dynamodb')
     table_name = 'Inventory'
 
