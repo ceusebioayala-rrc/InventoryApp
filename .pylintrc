@@ -10,5 +10,8 @@ disable=
     missing-function-docstring,
     unused-argument
 
+[TYPECHECK]
+ignored-modules=boto3,botocore
+
 [FORMAT]
 max-line-length=100
