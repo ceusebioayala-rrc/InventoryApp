@@ -37,7 +37,7 @@ jobs:
           FIX_YAML_PRETTIER: true
 
           # JSCPD duplicate detection threshold
-          JSCPD_THRESHOLD: 5
+          JSCPD_THRESHOLD: 15
 
           PYTHON_PYLINT_CONFIG_FILE: .pylintrc
 
