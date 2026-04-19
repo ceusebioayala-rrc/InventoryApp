@@ -5,7 +5,7 @@ import json
 import boto3
 
 
-def lambda_handler(event, context):
+def lambda_handler(event, _context):
     """Handles request to delete inventory items."""
 
     dynamo_client = boto3.client('dynamodb')

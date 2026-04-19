@@ -23,9 +23,10 @@ def convert_decimals(obj):
         return {k: convert_decimals(v) for k, v in obj.items()}
     elif isinstance(obj, Decimal):
         return int(obj) if obj % 1 == 0 else float(obj)
-    return obj
+    else:
+        return obj
 
-def lambda_handler(event, context):
+def lambda_handler(event, _context):
     """Handles request to get inventory items by location_id."""
 
     table = dynamodb.Table(TABLE_NAME)
