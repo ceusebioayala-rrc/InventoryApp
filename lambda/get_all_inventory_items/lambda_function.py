@@ -1,4 +1,4 @@
-"""This is a lambda function for getting all inventory items from DynamoDB."""
+"""Lambda function for getting all inventory items from DynamoDB."""
 
 import json
 
